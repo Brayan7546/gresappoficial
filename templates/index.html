@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% include 'header.html' %}
+
+
+{% block title %}GRES APP | COTECMAR{% endblock %}
+
+{% block customCSS %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css')}}">
+{% endblock %}
+
+
+{% block body %}
+<div class="container" id="mainform">
+  <h2 class="fw-bold">BIENVENIDO/A A GRES APP</h2>
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <ul class="flashes">
+          {% for message in messages %}
+            <li class="flash">{{ message }}</li>
+          {% endfor %}
+      </ul>
+    {% endif %}  
+  {% endwith %}
+
+  <form method="post" enctype="multipart/form-data" onsubmit="return validateForm()">
+      <div class="form-group">
+      <label for="file" class="custom-file-upload">Seleccionar Archivo</label>
+      <input type="file" name="file" id="file" accept=".xls,.xlsx" required/>
+      </div>
+
+      <button type="submit" id="submitBtn" class="btn btn-primary" disabled>Subir</button>
+      <a href="https://drive.google.com/uc?export=download&id=1uxGeUvZ7TmmOgEA2F9zMvGaZVG--x2BM" class="download-btn" download>Descargar formato</a>
+  </form>
+  <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+</div>
+{% endblock %}

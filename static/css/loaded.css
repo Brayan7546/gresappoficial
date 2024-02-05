@@ -1,0 +1,265 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;746&display=swap');
+
+
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+}
+
+#maincontainer{
+    height: 570px;
+    max-width: 100%;
+    display: flex;
+    flex-direction:row;
+    justify-content:flex-start;
+    background-color: #fafafa;
+}
+
+.selected-row {
+    background-color: #aaa; /* Puedes ajustar el color de fondo según tus preferencias */
+}
+
+.table-container {
+    margin-left: 4px;
+    max-width: 570px;
+    transition: max-width 0.5s ease;
+    overflow-y: auto; 
+}
+
+#maincontainer {
+    transition: max-width 0.5s ease;
+}
+
+#maintable.expanded, .table-container.expanded {
+    max-width: 100%;
+    width: 100%;
+    opacity: 1;
+    visibility: visible;
+}
+
+#maintable, .table-container, #infoform {
+    transition: width 0.5s ease, opacity 0.5s ease;
+}
+
+#maintable, #infoform {
+    transition: all 0.5s ease;
+}
+
+#infoform {
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+    opacity: 1;
+    visibility: visible;
+}
+
+#infoform.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.toggle-icon {
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.toggle-button {
+    transition: transform 0.3s ease;
+}
+/* Aplica estilos flexbox solo cuando el contenedor tiene la clase "centered" */
+.button-container.centered {
+    display: flex;
+    flex-direction: row; /* Para que los botones estén uno al lado del otro */
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+#addTeamBtn, #exportarButton {
+    min-width: 140px;
+    font-size: 14px;
+    margin-right: 10px; /* Espaciado entre los botones */
+}
+
+/* Media query para ajustar el espaciado entre los botones en pantallas más pequeñas */
+@media (max-width: 768px) {
+    .button-container.centered {
+        flex-direction: column; /* Para que los botones estén uno arriba del otro en pantallas más pequeñas */
+        margin-right: 0; /* Elimina el espaciado entre los botones */
+        margin-bottom: 10px; /* Espaciado vertical entre los botones */
+    }
+}
+
+#maintable {
+    height: 100%;
+    max-width: 600px;
+    transition: max-width 0.5s ease;
+    padding-top: 20px;
+    margin-left: -11px;
+    background-color: #fff;
+    box-shadow: 0px 0px 10px #aaa;
+    text-align: center;
+    max-height: 100%;
+    overflow-y: auto;
+}
+
+
+.search-input {
+    width: 250px; /* ajusta el ancho según tus necesidades */
+}
+
+#asignarMECButton{
+    font-size: 15px;
+    width:160px;
+}
+
+#exportarButton{
+    font-size: 15px;
+    width:160px;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.fade-out {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.fade-in {
+    opacity: 1;
+    visibility: visible;
+}
+
+.hidden {
+    display: none;
+}
+
+.table tr:hover {
+    cursor: pointer;
+}
+
+#infoform {
+    max-height: 100%;
+    overflow-y: auto;
+    margin-top: 20px;
+    max-width: 700px;
+    height: 530px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0px 0px 10px #aaa;
+    text-align: center;
+    transition: opacity 0.5s ease, visibility 0.5s ease; 
+}
+
+h2{
+color: #1e6bb8;
+text-align: center;
+font-family: 'Inter', sans-serif;
+}
+
+.table {
+margin-top: 20%;
+margin: 0 auto;
+width: 100%;
+text-align: center;
+font-family: 'Inter', sans-serif;
+border-collapse: collapse;
+}
+
+td {
+padding: 7px; 
+}
+
+th {
+background-color: #1e6bb8;
+color: black;
+text-align: center;
+font-family: 'Inter', sans-serif;
+}
+
+.flash {
+color: red;  
+font-family: 'Inter', sans-serif;
+}
+
+.submit {
+margin-bottom: 20px;
+}
+
+
+#searchInput{
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.btn-format {
+margin-top: 10px;
+margin-bottom: 10px;
+font-family: 'Inter', sans-serif;
+background-color: #1e6bb8;
+color: white;
+border-radius: 5px;
+padding: 8px 16px;
+font-size: 14px;
+cursor: pointer;
+}
+
+.btn-primary:disabled {
+margin-top: 10px;
+margin-bottom: 10px;
+background-color: #808080;  
+cursor: not-allowed;
+border-radius: 5px;
+padding: 8px 16px;
+font-size: 14px;
+}
+
+
+input[type="file"] {
+display: none;
+}
+
+.custom-file-upload {
+font-family: 'Inter', sans-serif;
+border: 1px solid #ccc;
+display: inline-block;
+padding: 6px 12px;
+cursor: pointer;
+background-color: #1e6bb8;
+color: white;
+border-radius: 5px;
+font-size: 14px;
+transition: background-color 0.3s;
+}
+
+.custom-file-upload:hover {
+background-color: #114981;
+}
+
+.download-btn{
+font-family: 'Inter', sans-serif;
+border: 1px solid #ccc;
+display: inline-block;
+padding: 6px 12px;
+cursor: pointer;
+background-color: #1e6bb8;
+color: white;
+border-radius: 5px;
+font-size: 14px;
+text-decoration: none;
+transition: background-color 0.3s;
+}
+
+.download-btn:hover {
+    background-color: #114981;
+}
+    
+.p-3{
+    border-radius: 5px;
+    font-weight: bold; 
+}

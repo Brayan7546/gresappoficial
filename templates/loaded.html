@@ -1,0 +1,770 @@
+{% extends 'base.html' %}
+{% include 'header.html' %}
+
+{% block title %}GRES APP | COTECMAR{% endblock %}
+
+{% block customCSS %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/loaded.css')}}">
+{% endblock %}
+
+{% block body %}
+<div id="groupedData" style="display:none;">{{ grouped_data | tojson | safe }}</div>
+<div class="container" id="maincontainer">
+    <div class="container" id="maintable">
+        <div class="row" id="tools">
+            <div class="col-md-6">
+                <div>
+                    <input type="text" class="form-control search-input" id="searchInput" placeholder="Buscar CJ">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="button-container centered">
+                    <button type="button" class="btn btn-primary" id="addTeamBtn">Añadir Equipo</button>
+                    <button type="button" id="exportarButton" class="btn btn-success">Exportar MEC</button>
+                </div>
+            </div>
+        </div>
+  
+        {% if grouped_data %}
+            <div class="table-container">
+                <table class="table table-hover" id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>CJ</th>
+                            <th>Nombre Equipo</th>
+                            <th>MEC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for key, value in grouped_data.items() %}
+                            {% if key.endswith('1') %}
+                                <tr class="edit-btn" data-cj="{{ key }}">
+                                    <td>{{ key }}</td>
+                                    <td>{{ value['Nombre_Equipo'] }}</td>
+                                    <td>{{ value['MEC'] }}</td>
+                                    <td><img src="{{ url_for('static', filename='img/chevron-left.svg') }}" alt="chevron" class="toggle-button"></td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+  
+    <div class="container" id="infoform">
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.1/jspdf.umd.min.js"></script>
+<script>
+
+    configurarEventosTabla();
+
+    document.getElementById('addTeamBtn').addEventListener('click', function() {
+
+        function toggleView() {
+            var maintable = document.getElementById('maintable');
+            var tableContainer = document.querySelector('.table-container');
+            var searchInput = document.getElementById('searchInput');
+            var addTeamBtn = document.getElementById('addTeamBtn');
+            var tools = document.getElementById('tools');
+            var exportarButton = document.getElementById('exportarButton');
+            var button = document.querySelector('.toggle-button');
+
+            // Retrasa la transición del maintable
+            setTimeout(function () {
+                maintable.classList.toggle('expanded');
+                tableContainer.classList.toggle('expanded');
+                tableContainer.classList.toggle('collapsed');
+                searchInput.parentElement.classList.toggle('centered');
+                tools.classList.toggle('centered');
+            }, 300); // Ajusta el tiempo de retraso según sea necesario
+
+            setTimeout(function () {
+                infoform.classList.toggle('hidden');
+            }, 700); 
+        }
+
+        toggleView()
+
+        var currentFormHTML = document.getElementById('infoform').innerHTML;
+    
+        document.getElementById('infoform').innerHTML = newTeamForm;
+    
+        document.getElementById('infoform').addEventListener('click', function(event) {
+            if (event.target.type === 'submit') {
+                event.preventDefault();
+    
+                var nuevoCj = document.getElementById('nuevoCjInput').value;
+                var nuevoNombre = document.getElementById('nuevoNombreEquipoInput').value;
+    
+                if (!validarCJ(nuevoCj)) {
+                    alert('El CJ ingresado no es válido');
+                    return;
+                }
+                
+                const cjValidado = validarCJ(nuevoCj);
+    
+                if (groupedData.hasOwnProperty(cjValidado)) {
+                    alert('El CJ ' + cjValidado + ' ya existe para el equipo principal.');
+                    return;
+                }
+    
+                groupedData[cjValidado] = {
+                    'MEC': '',
+                    'Nombre_Equipo': nuevoNombre,
+                    'decisionPath': ''
+                };
+                
+                const copiasContenedor = document.getElementById('copiasContenedor');
+                const copiasInputs = copiasContenedor.querySelectorAll('.form-control');
+                const copiasData = {}; 
+
+                copiasInputs.forEach(function(input, index) {
+                    const cjCopia = input.value;
+
+                    if (copiasInputs[index + 1]) {
+                        const nombreEquipoCopia = copiasInputs[index + 1].value;
+
+                        copiasData[cjCopia] = {
+                            'MEC': '',
+                            'Nombre_Equipo': nombreEquipoCopia,
+                            'decisionPath': ''
+                        };
+                    }
+                });
+
+                Object.assign(groupedData, copiasData);
+    
+                console.log("llegue aca")
+                actualizarTabla();
+                configurarEventosTabla();
+    
+                document.getElementById('infoform').innerHTML = currentFormHTML;
+            } else if (event.target.id === 'cancelarNuevoEquipo') {
+                infoform.classList.toggle('hidden'); 
+                configurarEventosTabla();
+                document.getElementById('infoform').innerHTML = currentFormHTML;
+            }
+        });
+    });
+    
+
+
+    function configurarEventosTabla() {
+        document.querySelectorAll('.edit-btn').forEach(function(row) {
+
+            row.addEventListener('click', function() {
+                
+                document.querySelectorAll('.edit-btn').forEach(function(row) { row.classList.remove('selected-row'); });
+                row.classList.add('selected-row');
+                var cj = row.querySelector('td:nth-child(1)').innerText;
+                var nombreEquipo = row.querySelector('td:nth-child(2)').innerText;
+                var MEC = row.querySelector('td:nth-child(3)').innerText;
+                var ruta = groupedData[cj]['decisionPath'];
+
+                if (MEC === '') { MEC = 'No asignado'; }
+
+                var imagePath = 'static/img/' + ruta + '.png';
+
+                var formHTML = `
+                <form id="editForm" class="row g-2">
+                    <div class="col-md-3">
+                        <div class="col-12 mt-2">
+                            <label for="cjInput" class="form-label">CJ</label>
+                            <input type="text" class="form-control float-starts" id="cjInput" value="${cj}" readonly>
+                        </div>
+                        <div class="col-12 mt-2">
+                            <label for="mecInput" class="form-label">MEC</label>
+                            <input type="text" class="form-control float-starts" id="mecInput" value="${MEC}" readonly>
+                        </div>
+                        <div class="col-6 mt-3">
+                            <button type="button" id="asignarMECButton" class="btn btn-success">Asignar MEC</button>
+                        </div>
+                    </div>
+
+                    <!-- Columna 2 -->
+                    <div class="col-md-9" style="margin-top:16px">
+                        <div class="col-12">
+                            <label for="nombreEquipoInput" class="form-label">Nombre Equipo</label>
+                            <input type="text" class="form-control" id="nombreEquipoInput" value="${nombreEquipo}">
+                        </div>
+                        <div class="col-12">
+                            <img id="imagenDecision" src="${imagePath}" alt="" style="max-width: 100%; height: auto;">
+                        </div>
+                    </div>
+                </form>
+
+                <div class="mt-4" id="childTeamsContainer">
+                    <!-- La tabla de equipos hijos se generará aquí -->
+                </div>
+            `;
+
+                document.getElementById('infoform').innerHTML = formHTML;
+
+                var cjPrefix = cj.substring(0, 4);
+
+                actualizarListaHijos(cjPrefix);
+
+                document.getElementById('editForm').addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    console.log('Formulario enviado');
+                });
+            });
+        });
+
+        document.getElementById('searchInput').addEventListener('input', function () {
+            var searchTerm = this.value.toLowerCase();
+            var rows = document.querySelectorAll('#dataTable tbody tr');
+
+            rows.forEach(function (row) {
+                var cj = row.querySelector('td:nth-child(1)').innerText.toLowerCase();
+                var nombreEquipo = row.querySelector('td:nth-child(2)').innerText.toLowerCase();
+
+                if (cj.endsWith('1') && (cj.includes(searchTerm) || nombreEquipo.includes(searchTerm))) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+
+
+    function actualizarTabla() {
+        var table = document.getElementById('dataTable').querySelector('tbody');
+        table.innerHTML = '';
+
+        for (var key in groupedData) {
+            if (key.endsWith('1')) {
+                var value = groupedData[key];
+                var row = document.createElement('tr');
+                row.classList.add('edit-btn');
+                row.dataset.cj = key;
+                row.innerHTML = `
+                    <td>${key}</td>
+                    <td>${value['Nombre_Equipo']}</td>
+                    <td>${value['MEC']}</td>
+                    <td><img src="{{ url_for('static', filename='img/chevron-left.svg') }}" alt="chevron" class="toggle-button"></td>
+                `;
+                table.appendChild(row);
+            }
+        }
+    }
+
+    var newTeamForm = `
+    <div id="formularioDinamico">
+        <div class="col-12 mt-2" style="height: 50px">
+            <button type="submit" class="btn btn-success">Guardar</button>
+            <button type="button" id="cancelarNuevoEquipo" class="btn btn-secondary">Cancelar</button>
+        </div>
+        <form id="nuevoEquipoForm" onsubmit="crearFila(event)" class="row g-4">
+            <div class="col-md-2">
+                <div class="col-12 mt-2">
+                    <label for="nuevoCjInput" class="form-label">CJ</label>
+                    <input type="text" class="form-control" id="nuevoCjInput" placeholder="3XXX1" required>
+                    <div class="invalid-feedback">El valor debe iniciar en digito mayor que 2 y menor que 8, debe finalizar en 1.</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="col-12 mt-2">
+                    <label for="nuevoNombreEquipoInput" class="form-label">Nombre Equipo</label>
+                    <input type="text" class="form-control" id="nuevoNombreEquipoInput" required>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="col-12 mt-2">
+                    <label for="copiasInput" class="form-label">Copias</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="copiasInput" min="0" value="0">
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="col-12 mt-2">
+                    <button type="button" class="btn btn-primary" style="margin-top:32px" id="copiasBtn">Agregar</button>
+                </div>
+            </div>
+        </form>
+        <div id="copiasContenedor"></div>
+    </div>
+    `;    
+
+    var groupedData = JSON.parse('{{ grouped_data | tojson | safe }}');
+
+    function actualizarListaHijos(cjPrefix) {
+        var childTeams = [];
+        var hayCopias = false;
+    
+        for (var key in groupedData) {
+        if (key.startsWith(cjPrefix) && key[4] !== '1') {
+            hayCopias = true;
+            var childTeam = { key: key, value: groupedData[key], };
+            childTeams.push(childTeam);
+        }
+        }
+    
+        var childRowsHtml = childTeams.map(function(team) {
+        var key = team.key;
+    
+        return `<tr><td>${key}</td><td>${team.value['Nombre_Equipo']}</td></tr>`;
+        }).join('');
+    
+        var childTableHtml = '';
+
+        if (hayCopias) {
+        childTableHtml = `
+            <h5>Copias</h5>
+            <table class="table table-hover">
+            <thead>
+                <tr>
+                <th>CJ</th>
+                <th>Nombre Equipo</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${childRowsHtml}
+            </tbody>
+            </table>
+        `;
+        } else { childTableHtml = `<h5>No tiene copias</h5>`; }
+    
+        document.getElementById('childTeamsContainer').innerHTML = childTableHtml;
+    }
+
+    document.getElementById('searchInput').addEventListener('input', function () {
+        var searchTerm = this.value.toLowerCase();
+        var rows = document.querySelectorAll('#dataTable tbody tr');
+
+        rows.forEach(function (row) {
+            var cj = row.querySelector('td:nth-child(1)').innerText.toLowerCase();
+            var nombreEquipo = row.querySelector('td:nth-child(2)').innerText.toLowerCase();
+
+            if (cj.endsWith('1') && (cj.includes(searchTerm) || nombreEquipo.includes(searchTerm))) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+
+    let decisionPath = '';
+
+    function eliminarUltimoDigito() { decisionPath = decisionPath.slice(0, -1); }
+
+    function mostrarPregunta(titulo, onConfirm, onDeny, onBack, row, decision) {
+        Swal.fire({
+            title: titulo,
+            icon: 'question',
+            allowEscapeKey: false,
+            allowEnterKey: false,
+            allowTabKey: false,
+            showCancelButton: true,
+            showDenyButton: onBack !== null,
+            confirmButtonText: 'Sí',
+            cancelButtonText: 'No',
+            denyButtonText: 'Regresar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                decisionPath += '1'; 
+                onConfirm(row);
+            } else if (result.dismiss === Swal.DismissReason.cancel) {
+                decisionPath += '0'; 
+                onDeny(row);
+            } else if (result.isDenied && onBack) {
+                eliminarUltimoDigito(); 
+                onBack(row);
+            }
+        });
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (Swal.isVisible()) {
+            switch(e.key) {
+                case 's':
+                    e.preventDefault();
+                    Swal.clickConfirm(); 
+                    console.log('Tecla: s');
+                    break;
+                case 'n':
+                    e.preventDefault(); 
+                    Swal.clickCancel(); 
+                    console.log('Tecla: n');
+                    break;
+                case 'Backspace':
+                    if (onBack) {
+                        e.preventDefault(); 
+                        eliminarUltimoDigito(); 
+                        onBack(row);
+                        console.log('Tecla: backspace');
+                    }
+                    break;            
+            }
+        }
+    });
+        
+
+    function cargarImagen(decisionPath) {
+        let imagePath = 'static/img/' + decisionPath + '.png';
+
+        let img = document.getElementById('imagenDecision');
+        img.src = imagePath;
+        img.style.display = 'block';
+
+        document.getElementById('infoform').innerHTML = formHTML;
+    }
+
+
+    document.getElementById('infoform').addEventListener('click', function(event) {
+        if (event.target.id === 'asignarMECButton') {
+            var mec = 'MEC 1';
+            var cj = document.getElementById('cjInput').value; 
+            pregunta1(mec, cj); 
+        }
+
+
+        if (event.target.id === 'copiasBtn') {
+
+            const cjBase = document.getElementById('nuevoCjInput').value;
+
+            if (!validarCJ(cjBase)) {
+                alert('El CJ debe iniciar en un numero mayor que 2 y menor que 8, debe terminar el 1');
+                return;
+            }
+
+            const numeroCopias = parseInt(document.getElementById('copiasInput').value);
+            const baseCj = cjBase.substring(0, 4);
+            let ultimoDigito = parseInt(cjBase.slice(-1)); 
+    
+            const contenedor = document.getElementById('copiasContenedor');
+            contenedor.innerHTML = ''; 
+            
+            for (let i = 2; i <= numeroCopias + 1; i++) {
+                const fila = document.createElement('div');
+                fila.className = 'row g-3 mt-2';
+            
+                let sufijoCj;
+                if (i <= 9) {
+                sufijoCj = i;
+                } else {
+                const letraAscii = i - 9 + 64; 
+                sufijoCj = String.fromCharCode(letraAscii);
+                }
+            
+                fila.innerHTML = `
+                <div class="col-md-2">
+                    <input type="text" class="form-control" value="${baseCj}${sufijoCj}">
+                </div>
+                <div class="col-md-8">
+                    <input type="text" class="form-control" placeholder="Nombre Equipo" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger" onclick="this.parentNode.parentNode.remove()">
+                    X
+                    </button>
+                </div>
+                `;
+            
+                contenedor.appendChild(fila);
+            }
+        }
+    });
+
+    function pregunta1(mec, cj) {
+        decisionPath = '';
+        mostrarPregunta(
+            '¿Se pierde capacidad si el equipo no funciona?',
+            pregunta2,
+            function() { asignarMEC(mec, cj); cargarImagen(decisionPath); },
+            null,
+            cj
+        );
+    }
+
+    function pregunta2(row) {
+        mostrarPregunta(
+            '¿Tiene un efecto adverso en la seguridad del personal o de la plataforma?',
+            pregunta6,
+            recursivo,
+            pregunta1,
+            row,
+        );
+    }
+
+    function pregunta6(row) {
+        mostrarPregunta(
+            '¿Existe redundancia para mitigar este riesgo?',
+            recursivo,
+            function() { asignarMEC('MEC 4', row); cargarImagen(decisionPath); },
+            pregunta2,
+            row
+        );
+    }
+
+    function recursivo(row) {
+        mostrarPregunta(
+            '¿La cadena de eventos provoca la degradación de alguna misión?',
+            pregunta4,
+            function() { asignarMEC('MEC 1', row); cargarImagen(decisionPath); },
+            pregunta2,
+            row
+        );
+    }
+
+    function pregunta4(row) {
+        mostrarPregunta(
+            '¿Existe redundancia o alternativas disponibles?',
+            pregunta7,
+            pregunta5,
+            recursivo,
+            row
+        );
+    }
+
+    function pregunta5(row) {
+
+    Swal.fire({
+        title: '¿De qué tamaño serían las pérdidas? (A/B): \n (A) menores \n (B) de una misión \n',
+        icon: 'question',
+        allowEscapeKey: false,
+        allowEnterKey: false,
+        allowTabKey: false,
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: 'A',
+        cancelButtonText: 'B',
+        denyButtonText: 'Regresar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            decisionPath += '1'; 
+            asignarMEC('MEC 2', row);
+            cargarImagen(decisionPath);
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+            decisionPath += '0'; 
+            asignarMEC('MEC 3', row);
+            cargarImagen(decisionPath);
+        } else if (result.isDenied && onBack) {
+            eliminarUltimoDigito();
+            onBack(row);
+        }
+    });
+    }
+
+    function pregunta7(row) {
+        mostrarPregunta(
+            '¿Mitiga completamente el efecto de la degradación?',
+            function() { asignarMEC('MEC 1', row); cargarImagen(decisionPath); },
+            pregunta5,
+            pregunta4,
+            row
+        );
+    }
+
+    function asignarMEC(mec, cj) {
+        var row = document.querySelector(`#maintable tr[data-cj="${cj}"]`);
+        if (row) {
+            row.querySelector('td:nth-child(3)').innerText = mec;
+
+            var mecInput = document.getElementById('mecInput');
+            if (mecInput) { mecInput.value = mec; }
+
+            if (groupedData[cj]) {
+                groupedData[cj]['MEC'] = mec; 
+                groupedData[cj]['decisionPath'] = decisionPath;
+
+                var cjPrefix = cj.substring(0, 4);
+                for (var key in groupedData) {
+                    if (key.startsWith(cjPrefix)) { groupedData[key]['MEC'] = mec; groupedData[key]['decisionPath'] = decisionPath; }
+                }
+            }
+        }
+    }
+
+
+    document.getElementById('infoform').addEventListener('keyup', function(event) {
+        if (event.target.id === 'nombreEquipoInput' && event.key === 'Enter') {
+            var newNombre = event.target.value; 
+            var selectedRow = document.querySelector('.selected-row');
+            if (selectedRow) { selectedRow.querySelector('td:nth-child(2)').innerText = newNombre; }
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var selectedRowExists = document.querySelector('.selected-row') !== null;
+        
+        document.querySelectorAll('.toggle-button').forEach(function(button) { button.addEventListener('click', toggleView); });
+
+        if (!selectedRowExists) { toggleView(); }
+
+        function toggleView() {
+            var maintable = document.getElementById('maintable');
+            var infoform = document.getElementById('infoform');
+            var tableContainer = document.querySelector('.table-container');
+            var searchInput = document.getElementById('searchInput');
+            var addTeamBtn = document.getElementById('addTeamBtn');
+            var tools = document.getElementById('tools');
+            var exportarButton = document.getElementById('exportarButton');
+            var button = document.querySelector('.toggle-button');
+
+            // Retrasa la transición del maintable
+            setTimeout(function () {
+                maintable.classList.toggle('expanded');
+                tableContainer.classList.toggle('expanded');
+                tableContainer.classList.toggle('collapsed');
+                searchInput.parentElement.classList.toggle('centered');
+                tools.classList.toggle('centered');
+            }, 300); // Ajusta el tiempo de retraso según sea necesario
+
+            setTimeout(function () {
+                infoform.classList.toggle('hidden');
+            }, 700); 
+        }
+    });
+
+    const toggles = document.querySelectorAll('.toggle-button');
+
+    toggles.forEach(toggle => {
+        toggle.addEventListener('click', () => {
+            toggles.forEach(toggle => {
+                if(toggle.src.includes('chevron-right')) {
+                    toggle.src = '{{ url_for("static", filename="img/chevron-left.svg") }}';
+                } else {
+                    toggle.src= '{{ url_for("static", filename="img/chevron-right.svg") }}'; }
+            
+            });
+        });
+    });
+
+    function validarCJ(cj) { 
+        if (cj.length === 4) {
+            cj += '1'; 
+            return cj;
+        } 
+        return /^[2-7]\d{3}1$/.test(cj); 
+    }
+
+    document.getElementById("exportarButton").addEventListener("click", async function () {
+        const doc = new jspdf.jsPDF();
+        const margenSuperior = 25;
+        const margenInferior = 25;
+        const margenIzquierdo = 30;
+        const margenDerecho = 30;
+        const anchoUtil = doc.internal.pageSize.getWidth() - margenIzquierdo - margenDerecho;
+        
+        const rows = document.querySelectorAll("#dataTable tbody tr");
+        
+        rows.forEach((row, index) => {
+            // Iniciar una nueva página para cada equipo
+            if (index > 0) { // Asegura que no se añada una nueva página para el primer equipo
+                doc.addPage();
+            }
+
+            let y = margenSuperior; // Restablecer el margen superior para cada nueva página
+            
+            // Título del documento en cada página
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Informe general de equipos MEC Cotecmar', margenIzquierdo, y);
+            y += 10;
+            
+            const cj = row.cells[0].innerText;
+            const nombreEquipo = row.cells[1].innerText;
+            const mec = row.cells[2].innerText;
+            var ruta = groupedData[cj]['decisionPath'];
+    
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.text('Nombre del equipo:', margenIzquierdo, y);
+            y += 7;
+
+            doc.setFont('helvetica', 'normal');
+            let nombreLines = doc.splitTextToSize(nombreEquipo, anchoUtil);
+            doc.text(nombreLines, margenIzquierdo, y);
+            y += nombreLines.length * 6;
+
+            // CJ
+            doc.text(`CJ: ${cj}`, margenIzquierdo, y);
+            y += 7;
+
+            // MEC
+            doc.text(`MEC: ${mec}`, margenIzquierdo, y);
+            y += 10;
+
+            // Copias del equipo
+            const copias = buscarCopias(cj);
+            if (copias.length > 0) {
+                doc.setFont('helvetica', 'bold');
+                doc.text('Copias del equipo:', margenIzquierdo, y);
+                y += 7;
+
+                copias.forEach(copia => {
+                    let textoCopia = `CJ: ${copia.cj} Nombre: ${copia.nombre}`;
+                    let copiaLines = doc.splitTextToSize(textoCopia, anchoUtil);
+                    
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(copiaLines, margenIzquierdo, y);
+                    y += copiaLines.length * 6;
+                });
+            }
+
+            var imagePath = 'static/img/' + ruta + '.png';
+
+            doc.addImage(imagePath, 'PNG', 30, y + 10, 140, 160); 
+            
+        });
+        
+        doc.save('listado-equipos-mec-asignado.pdf');
+    });
+
+    function buscarCopias(cjPrincipal) {
+        const copias = [];
+        const baseCJ = cjPrincipal.slice(0, -1);
+        for (var key in groupedData) {
+            if (key.startsWith(baseCJ) && key !== cjPrincipal) {
+                copias.push({
+                    cj: key,
+                    nombre: groupedData[key]['Nombre_Equipo']
+                });
+            }
+        }
+        return copias;
+    }
+
+    // Función para convertir un Uint8Array a una cadena de datos base64
+    function arrayBufferToBase64(buffer) {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById("exportarButton").addEventListener("click", function() {
+            var dataToExport = [];
+            dataToExport.push(["CJ", "Nombre_Equipo", "MEC"]);
+
+            for (var key in groupedData) {
+                if (groupedData.hasOwnProperty(key)) {
+                var item = groupedData[key];
+                dataToExport.push([key, item.Nombre_Equipo, item.MEC]);
+                }
+            }
+            var wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.aoa_to_sheet(dataToExport);
+
+            XLSX.utils.book_append_sheet(wb, ws, "Sheet JS");
+
+            ws['!cols'] = [{ wpx: 100 }, { wpx: 250 }, { wpx: 100 }];
+
+            XLSX.writeFile(wb, "ExportedData.xlsx");
+        });
+    });
+</script>
+{% endblock %}
+
+

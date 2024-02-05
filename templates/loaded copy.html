@@ -1,0 +1,47 @@
+document.addEventListener('DOMContentLoaded', function() {
+    let decisionPath = '';
+
+    function cargarImagen() {
+        var imagePath = `{{ url_for('static', filename='img/') }}${decisionPath}.png`;
+        document.getElementById('imagenDecision').src = imagePath;
+    }
+
+    function mostrarPregunta(titulo, onConfirm, onDeny, onBack, row) {
+        Swal.fire({
+            title: titulo,
+            icon: 'question',
+            allowEscapeKey: false,
+            showCancelButton: true,
+            showDenyButton: onBack !== null,
+            confirmButtonText: 'Sí',
+            cancelButtonText: 'No',
+            denyButtonText: 'Regresar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                decisionPath += '1';
+                onConfirm(row);
+            } else if (result.dismiss === Swal.DismissReason.cancel) {
+                decisionPath += '0';
+                onDeny(row);
+            } else if (result.isDenied && onBack) {
+                onBack(row);
+            }
+        });
+    }
+
+    // Resto de las funciones de preguntas aquí...
+
+    function asignarMEC(mec, cj) {
+        var row = document.querySelector(`#maintable tr[data-cj="${cj}"]`);
+        if (row) {
+            row.querySelector('td:nth-child(3)').innerText = mec;
+            var mecInput = document.getElementById('mecInput');
+            if (mecInput) {
+                mecInput.value = mec;
+                cargarImagen(); // Cargar la imagen después de asignar el MEC
+            }
+        }
+    }
+
+    // Resto de tu código aquí...
+});

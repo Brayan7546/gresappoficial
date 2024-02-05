@@ -1,0 +1,26 @@
+html, body {
+    height: 100%;
+  }
+
+.container-fluid{
+    justify-content: left;
+}
+
+#logo{
+    padding-right: 10px;
+}
+
+.navbar-toggler{
+    color: white;
+}
+
+
+.nav-link.selected {
+    color: white;
+    font-weight: bold; 
+}
+
+.navbar-brand {
+    margin-right: 10px; 
+    margin-left: 10px; 
+}
