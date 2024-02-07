@@ -57,7 +57,7 @@ def cargarArchivo():
 
 USERS = {
     'admin': {'password': 'adminpass'},
-    '@cotecmar.com': {'password': 'cotecmarpass'},
+    'user': {'password': 'userpass'}
 }
 
 @app.route('/login', methods=['GET', 'POST'])

@@ -7,11 +7,34 @@
 {% block title %} Cotecmar {% endblock %}
 
 {% block body %}
-<nav class="navbar navbar-expand-lg navbar-light" style="background-color: #31364C;">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="#" data-bs-toggle="modal" data-bs-target="#confirmModal" style="color:white; font-weight: bold;">
-            <img id="logo" src="{{ url_for('static', filename='img/Logo40x40.png')}}" class="d-inline-block align-text-bottom" alt="Logo">
+<nav class="navbar custom-navbar fixed-top">
+    <div class="container-fluid" id="navcontainer">
+        <a class="navbar-brand" href="#" data-bs-toggle="modal" data-bs-target="#confirmModal">
+            <img id="logo" src="{{ url_for('static', filename='img/Logo40x40.png')}}" class="d-inline-block align-text-center" alt="Logo"> 
+            ILS APPS
         </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+                    <!-- Adaptación de los elementos del menú a la nueva estructura -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'admin' %}active{% endif %}" href="/admin">Manual de operación</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'create' %}active{% endif %}" href="/create">Documento de metodología</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </div>
 </nav>
 
@@ -28,7 +51,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <a href="/" class="btn btn-primary">Sí, cargar otro archivo</a>
+                <a href="/cargarArchivo" class="btn btn-primary">Sí, cargar otro archivo</a>
             </div>
         </div>
     </div>

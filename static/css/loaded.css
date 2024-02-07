@@ -2,6 +2,7 @@
 
 
 body {
+    margin-top: 66px; 
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -24,7 +25,7 @@ body {
 }
 
 .table-container {
-    margin-left: 4px;
+    margin-left: auto;
     max-width: 570px;
     transition: max-width 0.5s ease;
     overflow-y: auto; 
@@ -71,19 +72,17 @@ body {
 /* Aplica estilos flexbox solo cuando el contenedor tiene la clase "centered" */
 .button-container.centered {
     display: flex;
-    flex-direction: row; /* Para que los botones estén uno al lado del otro */
-    justify-content: center;
+    flex-direction: row; 
+    justify-content: right;
     align-items: center;
     width: 100%;
 }
 
 #addTeamBtn, #exportarButton {
-    min-width: 140px;
+    min-width: 120px;
     font-size: 14px;
-    margin-right: 10px; /* Espaciado entre los botones */
 }
 
-/* Media query para ajustar el espaciado entre los botones en pantallas más pequeñas */
 @media (max-width: 768px) {
     .button-container.centered {
         flex-direction: column; /* Para que los botones estén uno arriba del otro en pantallas más pequeñas */
@@ -105,17 +104,7 @@ body {
     overflow-y: auto;
 }
 
-
-.search-input {
-    width: 250px; /* ajusta el ancho según tus necesidades */
-}
-
 #asignarMECButton{
-    font-size: 15px;
-    width:160px;
-}
-
-#exportarButton{
     font-size: 15px;
     width:160px;
 }
@@ -163,6 +152,7 @@ font-family: 'Inter', sans-serif;
 }
 
 .table {
+    
 margin-top: 20%;
 margin: 0 auto;
 width: 100%;
@@ -193,8 +183,10 @@ margin-bottom: 20px;
 
 
 #searchInput{
+    max-height: 35px;
     margin-top: 10px;
-    margin-bottom: 10px;
+    min-width: 250px;
+    max-width: 100%; 
 }
 
 .btn-format {
@@ -219,6 +211,14 @@ padding: 8px 16px;
 font-size: 14px;
 }
 
+#fileops, #tableops{
+    margin-right: auto;
+    margin-left: auto;
+}
+
+#expbtn{
+    margin-right: -30px;
+}
 
 input[type="file"] {
 display: none;
@@ -263,3 +263,51 @@ transition: background-color 0.3s;
     border-radius: 5px;
     font-weight: bold; 
 }
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+}
+
+.icon-button {
+    margin-top: 15px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    color: #333333;
+    background: #dddddd;
+    border: none;
+    outline: none;
+    border-radius: 50%;
+  }
+  
+  .icon-button:hover {
+    cursor: pointer;
+  }
+  
+  .icon-button:active {
+    background: #cccccc;
+  }
+  
+  .icon-button__badge {
+    font-weight: bold;
+    font-size: small;
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 20px;
+    height: 20px;
+    background: rgb(206, 24, 24);
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+  }
+  

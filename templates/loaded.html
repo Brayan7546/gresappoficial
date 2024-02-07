@@ -11,28 +11,44 @@
 <div id="groupedData" style="display:none;">{{ grouped_data | tojson | safe }}</div>
 <div class="container" id="maincontainer">
     <div class="container" id="maintable">
-        <div class="row" id="tools">
-            <div class="col-md-6">
-                <div>
-                    <input type="text" class="form-control search-input" id="searchInput" placeholder="Buscar CJ">
+        <div style="margin-left: 1px; margin-right: 1px">
+            <div class="row" id="fileops">
+                <div class="col-md-3">
+                    <button type="button" class="icon-button">
+                        <img src="{{ url_for('static', filename='img/exclamation-circle.svg')}}" style="width:35px">
+                        <span class="icon-button__badge">2</span>
+                    </button>
+                </div>
+                <div class="col-md-6">
+                    <h5 style="margin-top: 10px; margin-right:30px; font-weight: bold">NUEVO PROYECTO ICOTEA II</h5>
+                </div>
+                <div class="col-md-3" style="display: flex" >
+                    <div class="button-container centered">
+                        <button type="button" id="exportarButton" class="btn btn-primary">Exportar ZIP</button>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="button-container centered">
-                    <button type="button" class="btn btn-primary" id="addTeamBtn">Añadir Equipo</button>
-                    <button type="button" id="exportarButton" class="btn btn-success">Exportar MEC</button>
+            <div class="row" id="tableops">
+                <div class="col-md-9">
+                    <input type="text" class="form-control search-input" id="searchInput" placeholder="Buscar CJ">
+                </div>
+                <div class="col-md-3">
+                    <div class="button-container centered">
+                        <button type="button" class="btn btn-primary" id="addTeamBtn">Añadir Equipo</button>
+                    </div>
                 </div>
             </div>
         </div>
   
         {% if grouped_data %}
-            <div class="table-container">
+            <div class="table-container" style="border: 2px solid #ddd; border-radius: 10px">
                 <table class="table table-hover" id="dataTable">
                     <thead>
                         <tr>
                             <th>CJ</th>
                             <th>Nombre Equipo</th>
                             <th>MEC</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -64,30 +80,16 @@
 
     document.getElementById('addTeamBtn').addEventListener('click', function() {
 
-        function toggleView() {
-            var maintable = document.getElementById('maintable');
-            var tableContainer = document.querySelector('.table-container');
-            var searchInput = document.getElementById('searchInput');
-            var addTeamBtn = document.getElementById('addTeamBtn');
-            var tools = document.getElementById('tools');
-            var exportarButton = document.getElementById('exportarButton');
-            var button = document.querySelector('.toggle-button');
+        setTimeout(function () {
+        maintable.classList.remove('expanded');
+        searchInput.parentElement.classList.remove('centered');
+        tools.classList.remove('centered');
+        }, 300);
 
-            // Retrasa la transición del maintable
-            setTimeout(function () {
-                maintable.classList.toggle('expanded');
-                tableContainer.classList.toggle('expanded');
-                tableContainer.classList.toggle('collapsed');
-                searchInput.parentElement.classList.toggle('centered');
-                tools.classList.toggle('centered');
-            }, 300); // Ajusta el tiempo de retraso según sea necesario
+        setTimeout(function () {
+            infoform.classList.remove('hidden');
+        }, 700); 
 
-            setTimeout(function () {
-                infoform.classList.toggle('hidden');
-            }, 700); 
-        }
-
-        toggleView()
 
         var currentFormHTML = document.getElementById('infoform').innerHTML;
     
@@ -144,7 +146,7 @@
     
                 document.getElementById('infoform').innerHTML = currentFormHTML;
             } else if (event.target.id === 'cancelarNuevoEquipo') {
-                infoform.classList.toggle('hidden'); 
+                infoform.classList.remove('hidden'); 
                 configurarEventosTabla();
                 document.getElementById('infoform').innerHTML = currentFormHTML;
             }
@@ -157,6 +159,23 @@
         document.querySelectorAll('.edit-btn').forEach(function(row) {
 
             row.addEventListener('click', function() {
+
+                if (document.querySelector('.selected-row') === null){
+
+                    toggleButtonBehavior();
+
+                    setTimeout(function () {
+                        maintable.classList.remove('expanded');
+                        tableContainer.classList.remove('expanded');
+                        tableContainer.classList.remove('collapsed');
+                        searchInput.parentElement.classList.remove('centered');
+                        tools.classList.remove('centered');
+                    }, 300); 
+
+                    setTimeout(function () {
+                        infoform.classList.remove('hidden');
+                    }, 700); 
+                }
                 
                 document.querySelectorAll('.edit-btn').forEach(function(row) { row.classList.remove('selected-row'); });
                 row.classList.add('selected-row');
@@ -354,31 +373,56 @@
 
     function eliminarUltimoDigito() { decisionPath = decisionPath.slice(0, -1); }
 
-    function mostrarPregunta(titulo, onConfirm, onDeny, onBack, row, decision) {
+    function mostrarPregunta(titulo, onConfirm, onDeny, onBack, onComment, row, decision) {
+    Swal.fire({
+        title: titulo,
+        icon: 'question',
+        allowEscapeKey: false,
+        allowEnterKey: false,
+        allowTabKey: false,
+        showCancelButton: true,
+        showDenyButton: onBack !== null,
+        showConfirmButton: true,
+        confirmButtonText: 'Sí',
+        cancelButtonText: 'No',
+        denyButtonText: 'Regresar',
+        showCloseButton: false,
+        buttonsStyling: true,
+        footer: '<button id="commentButton" class="swal2-confirm swal2-styled" style="border-left-color: rgb(48, 133, 214); border-right-color: rgb(48, 133, 214);">Agregar comentario</button>'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            decisionPath += '1';
+            onConfirm(row);
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+            decisionPath += '0';
+            onDeny(row);
+        } else if (result.isDenied && onBack) {
+            decisionPath = decisionPath.slice(0, -1); // Asume eliminarUltimoDigito() hace esto
+            onBack(row);
+        }
+    });
+
+    // Listener para el botón de comentario
+    document.getElementById('commentButton')?.addEventListener('click', function() {
         Swal.fire({
-            title: titulo,
-            icon: 'question',
-            allowEscapeKey: false,
-            allowEnterKey: false,
-            allowTabKey: false,
+            input: "textarea",
+            inputLabel: "Message",
+            inputPlaceholder: "Type your message here...",
+            inputAttributes: {
+                "aria-label": "Type your message here"
+            },
             showCancelButton: true,
-            showDenyButton: onBack !== null,
-            confirmButtonText: 'Sí',
-            cancelButtonText: 'No',
-            denyButtonText: 'Regresar'
         }).then((result) => {
-            if (result.isConfirmed) {
-                decisionPath += '1'; 
-                onConfirm(row);
-            } else if (result.dismiss === Swal.DismissReason.cancel) {
-                decisionPath += '0'; 
-                onDeny(row);
-            } else if (result.isDenied && onBack) {
-                eliminarUltimoDigito(); 
-                onBack(row);
+            if (result.value) {
+                Swal.fire(result.value);
             }
+            // Vuelve a mostrar la pregunta original después de cerrar el comentario
+            mostrarPregunta(titulo, onConfirm, onDeny, onBack, onComment, row, decision);
         });
-    }
+    });
+}
+
+
 
     document.addEventListener('keydown', function(e) {
         if (Swal.isVisible()) {
@@ -592,6 +636,7 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
+
         var selectedRowExists = document.querySelector('.selected-row') !== null;
         
         document.querySelectorAll('.toggle-button').forEach(function(button) { button.addEventListener('click', toggleView); });
@@ -602,20 +647,17 @@
             var maintable = document.getElementById('maintable');
             var infoform = document.getElementById('infoform');
             var tableContainer = document.querySelector('.table-container');
-            var searchInput = document.getElementById('searchInput');
             var addTeamBtn = document.getElementById('addTeamBtn');
             var tools = document.getElementById('tools');
             var exportarButton = document.getElementById('exportarButton');
             var button = document.querySelector('.toggle-button');
 
-            // Retrasa la transición del maintable
             setTimeout(function () {
                 maintable.classList.toggle('expanded');
                 tableContainer.classList.toggle('expanded');
                 tableContainer.classList.toggle('collapsed');
-                searchInput.parentElement.classList.toggle('centered');
                 tools.classList.toggle('centered');
-            }, 300); // Ajusta el tiempo de retraso según sea necesario
+            }, 300); 
 
             setTimeout(function () {
                 infoform.classList.toggle('hidden');
@@ -625,17 +667,17 @@
 
     const toggles = document.querySelectorAll('.toggle-button');
 
-    toggles.forEach(toggle => {
-        toggle.addEventListener('click', () => {
-            toggles.forEach(toggle => {
-                if(toggle.src.includes('chevron-right')) {
-                    toggle.src = '{{ url_for("static", filename="img/chevron-left.svg") }}';
-                } else {
-                    toggle.src= '{{ url_for("static", filename="img/chevron-right.svg") }}'; }
-            
-            });
+    function toggleButtonBehavior() {
+        toggles.forEach(toggle => {
+            if (toggle.src.includes('chevron-right')) {
+            toggle.src = '{{ url_for("static", filename="img/chevron-left.svg") }}';
+            } else {
+            toggle.src = '{{ url_for("static", filename="img/chevron-right.svg") }}';
+            }
         });
-    });
+    }
+
+    toggles.forEach(toggle => { toggle.addEventListener('click', toggleButtonBehavior); });
 
     function validarCJ(cj) { 
         if (cj.length === 4) {
@@ -645,8 +687,9 @@
         return /^[2-7]\d{3}1$/.test(cj); 
     }
 
+    const doc = new jspdf.jsPDF();
+
     document.getElementById("exportarButton").addEventListener("click", async function () {
-        const doc = new jspdf.jsPDF();
         const margenSuperior = 25;
         const margenInferior = 25;
         const margenIzquierdo = 30;
@@ -712,10 +755,7 @@
             var imagePath = 'static/img/' + ruta + '.png';
 
             doc.addImage(imagePath, 'PNG', 30, y + 10, 140, 160); 
-            
         });
-        
-        doc.save('listado-equipos-mec-asignado.pdf');
     });
 
     function buscarCopias(cjPrincipal) {
@@ -746,14 +786,21 @@
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById("exportarButton").addEventListener("click", function() {
             var dataToExport = [];
+            var missingMEC = [];
             dataToExport.push(["CJ", "Nombre_Equipo", "MEC"]);
 
             for (var key in groupedData) {
                 if (groupedData.hasOwnProperty(key)) {
-                var item = groupedData[key];
-                dataToExport.push([key, item.Nombre_Equipo, item.MEC]);
+                    var item = groupedData[key];
+                    dataToExport.push([key, item.Nombre_Equipo, item.MEC]);
+
+                    // Comprueba si item.MEC está en blanco
+                    if (item.MEC === "") {
+                    missingMEC.push(key); // Almacena el CJ en la lista de faltantes
+                    }
                 }
             }
+
             var wb = XLSX.utils.book_new();
             var ws = XLSX.utils.aoa_to_sheet(dataToExport);
 
@@ -761,10 +808,10 @@
 
             ws['!cols'] = [{ wpx: 100 }, { wpx: 250 }, { wpx: 100 }];
 
-            XLSX.writeFile(wb, "ExportedData.xlsx");
+            if (missingMEC.length > 0) {
+                alert("Falta el MEC en los siguientes CJ: " + missingMEC.join(", "))
+            } else { XLSX.writeFile(wb, "ExportedData.xlsx"), doc.save('listado-equipos-mec-asignado.pdf') } 
         });
     });
 </script>
 {% endblock %}
-
-
